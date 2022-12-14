@@ -299,3 +299,283 @@ object pattern_matching {
     }
 
 }
+
+object course1_6_array {
+    val ages = Array(23, 21, 12, 99)
+    val even = ages.filter(_ % 2 == 0)
+    val message = ages.map { age => s"you have $age years"}
+    message.foreach(println)
+    // Map x => y
+
+    // to document your code, use the right naming for functions
+    def isEven(i: Int) = i % 2 == 0
+    val evenAges = ages.filter(isEven)
+
+    val firstNames = Array("John")
+    val lastNames = Array("Doe")
+    val ages2 = Array(23) 
+
+    //  let’s reuse pattern matching inside map function
+    firstNames zip lastNames zip ages2 map { 
+        case ((firstName, lastName), age) => Person(firstName, lastName, age)
+    }   
+
+    val amounts = Array(4.99, 6.34, 7.99, 99.00)
+    val minAmount = amounts.min
+    val maxAmount = amounts.max
+    val sumAmount = amounts.sum
+
+}
+
+object course1_6_list {
+
+    // List    (1 + a + a^2 + a^3 + ...)
+    object list_type {
+        sealed trait List[A]
+        object Nil extends List[Nothing]
+        case class Cons[A](a: A, tail: List[A]) // ::
+    }
+
+    // lists behavior is similar to Array !
+
+    val ages = List(23, 21, 12, 99)
+    val even = ages.filter(_ % 2 == 0)
+    val message = ages.map { age => s"you have $age years"}
+    message.foreach(println)
+    // Map x => y
+
+    val firstNames = List("John")
+    val lastNames = List("Doe")
+    val ages2 = List(23) 
+
+    firstNames zip lastNames zip ages2 map { 
+        case ((firstName, lastName), age) => Person(firstName, lastName, age)
+    }   
+
+    val amounts = List(4.99, 6.34, 7.99, 99.00)
+    val minAmount = amounts.min
+    val maxAmount = amounts.max
+    val sumAmount = amounts.sum
+    // https://docs.scala-lang.org/overviews/collections/overview.html
+    // Set => Unordered collection with deduplication
+
+}
+
+object course1_7_datatypes {
+
+    // Option  (1 + a)
+    object OptionType {
+
+        object option_type {
+            sealed trait Option[A]
+            object None extends Option[Nothing]
+            case class Some[A](a: A)
+        }
+
+        val anOption: Option[String] = Some("1")
+        val noValue: Option[String] = None
+        anOption.foreach { value =>
+            println(value)
+        }
+        anOption.foreach(println)
+
+        val parsedOption = anOption.map(_.toInt)
+    
+        def asOption(f:  => Int) = try {
+            Some(f)
+        } catch {
+            case _: Exception => None
+        }
+
+        val nullableToOption = asOption("a".toInt)
+
+        def addString(x: String, y: String): Option[Int] = for {
+            i <- asOption(x.toInt)
+            j <- asOption(y.toInt)            
+        } yield i+j
+
+        for {
+            x <- List("a", "1")
+            y <- List("b", "2")
+        } println(s"sum of $x and $y is ${addString(x, y)}")
+        
+        println(addString("a", "1").map(x => s"sum is $x").getOrElse("sum is not a value"))
+
+        def addInt(v1: Option[Int], v2: Option[Int]): Option[Int] = for {
+            x1 <- v1
+            x2 <- v2
+        } yield x1 + x2
+
+        val person: Person = null
+        def multiplyAgeByTwo(p: Person) = p.copy(age = p.age * 2)
+        multiplyAgeByTwo(person) // it will fail
+
+        // here, I am sure to succeed
+        Option(person)
+        .map(multiplyAgeByTwo)
+        .getOrElse(Person("John", "Doe", 0)) 
+
+        if (person == null) {
+            Person("John", "Doe", 0)
+        } else {
+            multiplyAgeByTwo(person)
+        }
+
+        // use Option DataType to manage missing value cases
+        val person1: Person = null
+        val person2 = Person("John", "Doe", 33)
+        
+        for {
+            p1 <- Option(person1)
+            p2 <- Option(person2)
+        } yield Person(s"${p1.firstName} ${p2.firstName}", s"${p1.lastName} ${p2.lastName}", (p1.age + p2.age)/2)
+
+    }
+    
+    // Either  (a + b)
+    object EitherType {
+
+        object either_type {
+            sealed trait Either[A, B]
+            case class Left[A](value: A) extends Either[A, Nothing]
+            case class Right[B](value: B) extends Either[Nothing, B]
+        }
+
+        def toInt(s: String): Either[String, Int] = try {
+            Right(s.toInt)
+        } catch {
+            case _ : Exception => Left(s"$s is not an Int")
+        }
+
+        val v = toInt("1").map(_*2)
+        v.foreach { value =>
+            println(s"v = $value")
+        }
+
+        val notAnInt = toInt("not an Int").map(_*2)
+        notAnInt.foreach { value =>
+            println(s"v = $value")
+        }
+
+        def add(x: String, y: String) = for {
+            a <- toInt(x)
+            b <- toInt(y)
+        } yield a + b
+
+        def add(x: String, y: String) = for {
+            a <- toInt(x)
+            b <- toInt(y)
+        } yield 0.0 + a + b
+    }
+
+}
+
+// import scala.util.{Try, Success, Failure}
+
+
+object try_type {
+    sealed trait Try[A]
+    case class Success[A](value: A) extends Try[A]
+    case class Failure(ex: Throwable) extends Try[A]
+}
+
+// Try[A] ~ Either[Throwable, A]
+// Success(a) <=> Right(a)
+// Failure(ex) <=> Left(ex)
+
+
+object course1_7_transformations {
+ 
+    val amounts = List(4.99, 5.99, 10.00)
+
+    // just combine values
+    val sum1 = amounts.reduce(_ + _)
+
+    // zero have the same type
+    val sum = amounts.foldLeft(0.0)(_ + _)
+
+    // zero have a specific type, use left
+    def incLeft(acc: Int, d: Double) = acc + 1
+    val count = amounts.foldLeft[Int](0)(incLeft)    
+
+    // zero have a specific type, use right
+    def incRight(d: Double, acc: Int) = acc + 1
+    val count = amounts.foldRight[Int](0)(incRight)    
+
+    // fold
+    // for option
+    val notAValue: Option[Boolean] = None
+    val aTrueValue: Option[Boolean] = Some(true)
+    val aFalseValue: Option[Boolean] = Some(false)
+    def ternaryToInt(v: Option[Boolean]) = v.fold(0)(b => if (b) 1 else 2)
+    Seq(notAValue, aTrueValue, aFalseValue).map(ternaryToInt)
+
+    def ternaryToInt(v: Option[Boolean]) = v match {
+        case None => 0
+        case Some(true) => 1
+        case Some(false) => 2
+    }
+    
+    // for either
+    val either: Either[Exception, String] = Right("a value")
+    val eitherType = either.fold(_ => "an error", _ => "a value")
+}
+
+object course1_8_regular_expression {
+
+    val C = "[A-Z]*".r
+    val v = "AEIOU"
+    // Char.matches(v)
+    C.findFirstMatchIn("AAAA2AAAA")
+    C.findAllMatchIn("AAAA2AAAA")
+
+    // see documentation https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html
+    // and then capture group
+    // and then
+}
+
+object course1_9_pattern_matching {    
+    val array = Array(1, 2)
+    val Array(a, b) = array
+
+    case class Person(firstName: String, lastName: String, age: Int)
+    val johnDoe = Person("john", "doe", 33)
+    val Person(firstName, lastName, age) = johnDoe
+    
+    // https://docs.scala-lang.org/tour/extractor-objects.html
+    // Example of CustomerId
+
+    // Example of regex
+    val LineRegex = "([^,]+)[,]([^,]+)[,]([0-9]+)".r
+    val line = "jane,doe,33"
+    val LineRegex(firstName, lastName, age) = line 
+
+    // within for comprehension
+    def isJohnDoe(firstName: String, lastName: String) = firstName == "John" && lastName == "Doe" 
+    val persons = for {
+        firstNames <- Array("John", "Jane")
+        lastNames <- Array("Doe", "Smith")
+        ages <- Array(10, 20, 33)
+        line = s"$firstNames,$lastNames,$ages" if ages >= 18 // only adults 
+        LineRegex(firstName, lastName, age) = line if !isJohnDoe(firstName, lastName) // no John Doe
+    } yield Person(firstName, lastName, age.toInt)
+
+}
+
+/// let’s introduce flatMap
+
+
+object course1_9_date_api {
+
+}
+
+object xxx_char_encoding {
+
+}
+
+object course1_10_csv_file_parsing_example { 
+}
+
+object course1_11_json_api { 
+    // TODO: select 1 API (spark)
+}
